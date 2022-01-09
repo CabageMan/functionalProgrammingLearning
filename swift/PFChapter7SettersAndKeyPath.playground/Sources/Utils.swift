@@ -61,6 +61,12 @@ public func <<< <A, B, C>(_ f: @escaping (B) -> C, _ g: @escaping (A) -> B) -> (
   return { f(g($0)) }
 }
 
+public func first<A, B, C>(_ f: @escaping (A) -> C) -> ((A, B)) -> (C, B) {
+    return { pair in
+        return (f(pair.0), pair.1)
+    }
+}
+
 public func second<A, B, C>(_ f: @escaping (B) -> C) -> ((A, B)) -> (A, C) {
   return { pair in
     return (pair.0, f(pair.1))
@@ -68,5 +74,9 @@ public func second<A, B, C>(_ f: @escaping (B) -> C) -> ((A, B)) -> (A, C) {
 }
 
 public func map<A, B>(_ f: @escaping (A) -> B) -> ([A]) -> [B] {
+  return { $0.map(f) }
+}
+
+public func map<A, B>(_ f: @escaping (A) -> B) -> (A?) -> B? {
   return { $0.map(f) }
 }
