@@ -135,9 +135,60 @@ second(
 <> first(incr)
 
 
-var newUser = user
-newUser.name = "Blobbo"
-newUser.location.name = "Los Angeles"
-newUser.favoriteFoods = copyUser.favoriteFoods.map { Food(name: $0.name + " & Salad") }
+// MARK: Example of Real Use
+var request = URLRequest(url: URL(string: "https://www.pointfree.co/hello")!)
 
-// Stopped at 17:02
+request.allHTTPHeaderFields = [:]
+
+request.allHTTPHeaderFields?["Authorization"] = "Token deadbeef"
+request.allHTTPHeaderFields?["Content-Type"] = "application/json; charset=utf-8"
+request.httpMethod = "POST" // When we set http method it set headers to nil. To avoid this we can set empty dictionary before setting method
+
+// Also we can go by this way
+
+let guaranteeHeaders = (prop(\URLRequest.allHTTPHeaderFields)) { $0 ?? [:] }
+
+let postJson =
+  guaranteeHeaders
+    <> (prop(\.httpMethod)) { _ in "POST" }
+    <> (prop(\.allHTTPHeaderFields) <<< map <<< prop(\.["Content-Type"])) { _ in "application/json; charset=utf-8"}
+
+let gitHubAccept =
+  guaranteeHeaders
+    <> (prop(\.allHTTPHeaderFields) <<< map <<< prop(\.["Accept"])) { _ in "application/vnd.github.v3+json" }
+
+let attachAuthorization = { (token: String) in
+  guaranteeHeaders
+    <> (prop(\.allHTTPHeaderFields) <<< map <<< prop(\.["Authorization"])) { _ in "Token \(token)" }
+}
+
+URLRequest(url: URL(string: "https://www.pointfree.co/hello")!)
+  |> attachAuthorization("deadbeef")
+  |> gitHubAccept
+  |> postJson
+
+
+let noFavoriteFoods = (prop(\User.favoriteFoods)) { _ in [] }
+let healthyEater = (prop(\User.favoriteFoods)) { _ in [Food(name: "Kale"), Food(name: "Broccoli")] }
+let domestic = (prop(\User.location.name)) { _ in "Brooklyn" }
+let international = (prop(\User.location.name)) { _ in "Copenhagen" }
+
+extension User {
+  static let template =
+    User(
+      favoriteFoods: [Food(name: "Tacos"), Food(name: "Nachos")],
+      location: Location(name: "Brooklyn"),
+      name: "Blob"
+  )
+}
+
+User.template
+  |> healthyEater
+  |> international
+
+let boringLocal = .template
+  |> noFavoriteFoods
+  |> domestic
+
+
+// MARK: Exercises
